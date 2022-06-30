@@ -46,21 +46,21 @@ public extension Data {
         self = Swift.withUnsafeBytes(of: value) { Data($0) }
     }
     
-    func to<T>(type: T.Type) -> T {
-        // FIXME: - DEPRECATION WARNING https://stackoverflow.com/questions/38023838/round-trip-swift-number-types-to-from-data
-        return self.withUnsafeBytes { $0.pointee }
+    func to<T>(type: T.Type) -> T? where T: ExpressibleByIntegerLiteral {
+        var value: T = 0
+        guard count >= MemoryLayout.size(ofValue: value) else { return nil }
+        _ = Swift.withUnsafeMutableBytes(of: &value, { copyBytes(to: $0)} )
+        return value
     }
-    
+      
     init<T>(fromArray values: [T]) {
         self = values.withUnsafeBytes { Data($0) }
     }
-    
-    func toArray<T>(type: T.Type) -> [T] {
-        return self.withUnsafeBytes {
-            // FIXME: - DEPRECATION WARNING https://stackoverflow.com/questions/38023838/round-trip-swift-number-types-to-from-data
-            [T](UnsafeBufferPointer(start: $0, count: self.count/MemoryLayout<T>.stride))
-        }
-        
+
+    func toArray<T>(type: T.Type) -> [T] where T: ExpressibleByIntegerLiteral {
+        var array = Array<T>(repeating: 0, count: self.count/MemoryLayout<T>.stride)
+        _ = array.withUnsafeMutableBytes { copyBytes(to: $0) }
+        return array
     }
     
     struct Base16EncodingOptions: OptionSet {
